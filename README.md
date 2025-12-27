@@ -57,7 +57,7 @@ The complete n8n canvas showing the end-to-end automation logic.
 
 ## 🛠️ Tech Stack
 - **Automation:** [n8n](https://n8n.io/)
-- **AI:** [Google Gemini 1.5 Flash](https://deepmind.google/technologies/gemini/)
+- **AI:** [Google Gemini 2.5 Flash](https://deepmind.google/technologies/gemini/)
 - **Storage:** Google Drive, Google Sheets
 - **Platforms:** Discord, YouTube
 - **Language:** JavaScript (for custom logic nodes)
