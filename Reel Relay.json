@@ -1,0 +1,792 @@
+{
+  "name": "Reel Relay",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -352,
+        112
+      ],
+      "id": "b9af44a2-44e4-4b13-8e24-63b21fce8e6b",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "getAll",
+        "guildId": {
+          "__rl": true,
+          "value": "842253290783375370",
+          "mode": "list",
+          "cachedResultName": "Yogeshbro's server",
+          "cachedResultUrl": "https://discord.com/channels/842253290783375370"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "1444012642384744500",
+          "mode": "list",
+          "cachedResultName": "youtube",
+          "cachedResultUrl": "https://discord.com/channels/842253290783375370/1444012642384744500"
+        },
+        "limit": 10,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        -128,
+        112
+      ],
+      "id": "030a0ff6-6c6f-4e1d-8903-931af57d80c6",
+      "name": "Get many messages",
+      "webhookId": "7f3cac7f-7d87-442e-bb31-fdbe3398f019",
+      "credentials": {
+        "discordBotApi": {
+          "id": "QWe8PktbjvfWwY69",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// The entire set of items from the Discord node is in the global 'items' array.\n// We want to process ONLY the first item (at index 0).\n\n// Check if the items array exists and has at least one item\nif (items && items.length > 0) {\n    // 1. Get the entire first item object, which contains the full Discord message JSON\n    const firstItem = items[0];\n\n    // 2. Extract the specific fields you need from that first item's JSON\n    const messageJson = firstItem.json;\n\n    // Safely extract the URL from the embeds array (which is nested inside the JSON)\n    let firstEmbedUrl = null;\n    if (messageJson.embeds && messageJson.embeds.length > 0) {\n        firstEmbedUrl = messageJson.embeds[0].url;\n    }\n\n    // 3. Create a new object with only the extracted data\n    const extractedData = {\n        postID: messageJson.id,\n        postContent: messageJson.content,\n        embedURL: firstEmbedUrl,\n        authorUsername: messageJson.author.username,\n        timestamp: messageJson.timestamp\n    };\n\n    // 4. Return the new object wrapped in an array.\n    // By returning an array with only ONE object, you ensure only ONE item is\n    // passed to the rest of the workflow.\n    return [{ json: extractedData }];\n\n} else {\n    // Return an empty array if there were no items\n    return [];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        96,
+        112
+      ],
+      "id": "f9b3dbc3-cb8a-482b-98e2-4145039a2c2b",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "url": "=https://floader.net/php/api/api.php?url={{ $('Code in JavaScript').item.json.embedURL }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        768,
+        208
+      ],
+      "id": "4404ea85-6492-44aa-86be-89020f0f3578",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get the HTML content from input\nconst htmlData = items[0].json.data;\n\n// Match the HD quality URL\nconst hdRegex = /<a href=\"([^\"]+)\"><span class=\"type\"><i class=\"fa fa-file-video-o\" aria-hidden=\"true\"><\\/i>HD quality<\\/span><\\/a>/;\n\nconst match = htmlData.match(hdRegex);\n\nlet hdUrl = null;\nif (match && match[1]) {\n  hdUrl = match[1];\n}\n\n// Return as a field in output\nreturn [\n  {\n    json: {\n      hdUrl\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        992,
+        208
+      ],
+      "id": "43a24eca-a7f0-4535-afe0-460dc1416268",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "text": "You are a highly-creative, specialized YouTube SEO expert for the niche \"Anime Emotion & Mood Compilations.\" Your goal is to generate one single, hyper-optimized video title and a compelling description based on the provided video content.\nYou must adhere to all constraints:\n1.  **Audience:** The target audience loves sad, moody, and deeply emotional anime realizations. The tone must be melancholic, poignant, and reflective.\n2.  **Channel:** The content is for the channel 'Daily Dose.'\n3.  **Title Constraint:** Title must be between 50-70 characters. It must include an emotional hook, relevant anime keywords, and a single, dramatic emoji. **NEVER use the phrases 'Anime Realization' or 'Sad Edit' in the title.** The title should stand alone as a powerful statement. Remaining should be hashtags in here too. So don't exceed 95 characters in total\n4.  **Description Constraint:** The description must be a maximum of 350 characters. It must start with a powerful hook, include 3-5 relevant keywords, and end with a call-to-action to subscribe. Use `\\n` characters for line breaks to improve readability.\n5.  **Output Format:** ONLY provide a single, valid JSON object with the keys 'title' and 'description'. Do not include any other text or commentary outside the JSON object.",
+        "videoUrls": "={{ $json.hdUrl }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        1216,
+        384
+      ],
+      "id": "7b6ac263-d9d6-4719-9eac-7f14d2b71cdd",
+      "name": "Analyze video",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "SCeAUqYDTvFsFRf5",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputText = items[0].json.content.parts[0].text;\n\n// Regex to capture title and description inside the ```json block\nconst titleMatch = inputText.match(/\"title\":\\s*\"([^\"]+)\"/);\nconst descMatch = inputText.match(/\"description\":\\s*\"([\\s\\S]*?)\"\\s*\\n}/);\n\nconst title = titleMatch ? titleMatch[1] : null;\nconst description = descMatch ? descMatch[1].replace(/\\\\n/g, '\\n') : null;\n\nreturn [\n  {\n    json: {\n      title,\n      description,\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1440,
+        384
+      ],
+      "id": "a257b6cb-4ce3-45ae-be31-46469df0422f",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.hdUrl }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        1216,
+        112
+      ],
+      "id": "2dbecda5-e59b-444e-98cf-242668e56ff5",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "resource": "video",
+        "operation": "upload",
+        "title": "={{ $('Code in JavaScript2').all()[0].json.title}}",
+        "regionCode": "NP",
+        "categoryId": "1",
+        "options": {
+          "description": "={{ $('Code in JavaScript2').all()[0].json.title}}",
+          "notifySubscribers": true,
+          "privacyStatus": "private",
+          "publishAt": "={{ DateTime.now().setZone('Asia/Kathmandu').plus({ days: 1 }).set({ hour: 20, minute: 0, second: 0, millisecond: 0 }).toUTC().toFormat(\"yyyy-MM-dd'T'HH:mm:ss'Z'\") }}"
+        }
+      },
+      "type": "n8n-nodes-base.youTube",
+      "typeVersion": 1,
+      "position": [
+        2112,
+        144
+      ],
+      "id": "b359e38c-3aee-4adf-9cbf-61ff079761d0",
+      "name": "Upload a video",
+      "alwaysOutputData": false,
+      "credentials": {
+        "youTubeOAuth2Api": {
+          "id": "nl92ta26wRBUcsIM",
+          "name": "YouTube account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch"
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1664,
+        304
+      ],
+      "id": "c3edd510-4bd3-44ae-aeb5-e94fe17501f2",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Edit Fields').all()[0].json.next_count_fb_reel}}.mp4",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "1RCaeygn3In2IrhVTGBm8dmdUTveDufuI",
+          "mode": "list",
+          "cachedResultName": "Assets Daily Dose YT",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/1RCaeygn3In2IrhVTGBm8dmdUTveDufuI"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        2560,
+        208
+      ],
+      "id": "8aa01a6a-4445-4bb1-b829-81af995b472e",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "7zLHoxAwrQc6nXwd",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "19_ojEnk09vkxB6ER-zdWm2kiwYpH5b2k-TuVBz8rjE0",
+          "mode": "list",
+          "cachedResultName": "daily-dose-yt-video",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19_ojEnk09vkxB6ER-zdWm2kiwYpH5b2k-TuVBz8rjE0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19_ojEnk09vkxB6ER-zdWm2kiwYpH5b2k-TuVBz8rjE0/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "uploaded": "={{ $now }}",
+            "fb-reel-link": "={{ $('Code in JavaScript').all()[0].json.embedURL}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "fb-reel-link",
+              "displayName": "fb-reel-link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "uploaded",
+              "displayName": "uploaded",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        2784,
+        208
+      ],
+      "id": "3449be1d-be07-4ee9-ad87-c6054340198a",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bktXKodlNR6cSUS9",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "guildId": {
+          "__rl": true,
+          "value": "842253290783375370",
+          "mode": "list",
+          "cachedResultName": "Yogeshbro's server",
+          "cachedResultUrl": "https://discord.com/channels/842253290783375370"
+        },
+        "channelId": {
+          "__rl": true,
+          "value": "842253290783375372",
+          "mode": "list",
+          "cachedResultName": "general",
+          "cachedResultUrl": "https://discord.com/channels/842253290783375370/842253290783375372"
+        },
+        "content": "=🟢 Uploaded the video in youtube. url: {{ $('Code in JavaScript').all()[0].json.embedURL}}  ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        3008,
+        208
+      ],
+      "id": "431a1e22-07a5-49f5-a4f0-22a63de2761d",
+      "name": "Send a message",
+      "webhookId": "1d4fa179-830c-42e0-b966-e85ba68b9191",
+      "credentials": {
+        "discordBotApi": {
+          "id": "QWe8PktbjvfWwY69",
+          "name": "Discord Bot account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "19_ojEnk09vkxB6ER-zdWm2kiwYpH5b2k-TuVBz8rjE0",
+          "mode": "list",
+          "cachedResultName": "daily-dose-yt-video",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19_ojEnk09vkxB6ER-zdWm2kiwYpH5b2k-TuVBz8rjE0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19_ojEnk09vkxB6ER-zdWm2kiwYpH5b2k-TuVBz8rjE0/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "fb-reel-link",
+              "lookupValue": "={{ $json.embedURL }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        320,
+        112
+      ],
+      "id": "748ca30a-a60e-4547-bfd4-299c84c71e81",
+      "name": "Get row(s) in sheet",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bktXKodlNR6cSUS9",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bde99087-4899-4d9e-b363-6db3f1e27c00",
+              "leftValue": "={{ $('Get row(s) in sheet').all()[0].json.row_number }}",
+              "rightValue": 1,
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        544,
+        112
+      ],
+      "id": "dc2224a2-e758-4310-b6c5-bbbdb7e42eb7",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        768,
+        16
+      ],
+      "id": "865ca820-72b0-4227-915c-397a83c9e730",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "19_ojEnk09vkxB6ER-zdWm2kiwYpH5b2k-TuVBz8rjE0",
+          "mode": "list",
+          "cachedResultName": "daily-dose-yt-video",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19_ojEnk09vkxB6ER-zdWm2kiwYpH5b2k-TuVBz8rjE0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/19_ojEnk09vkxB6ER-zdWm2kiwYpH5b2k-TuVBz8rjE0/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        1440,
+        48
+      ],
+      "id": "f05af76c-45ec-4d43-a01a-cddfeb71da31",
+      "name": "Get row(s) in sheet1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "bktXKodlNR6cSUS9",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1888,
+        208
+      ],
+      "id": "17a058e6-7645-4dd6-94d9-ffb0f0ded550",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d0134661-5324-4acd-a150-15daf323580f",
+              "name": "count_fb_reel",
+              "value": "={{ $('Get row(s) in sheet1').all().length }}",
+              "type": "string"
+            },
+            {
+              "id": "126b6ea5-9469-4352-b9b9-89af4cb2fc4c",
+              "name": "next_count_fb_reel",
+              "value": "={{ $('Get row(s) in sheet1').all().length + 1 }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1664,
+        48
+      ],
+      "id": "aa472460-2271-4232-8525-5c4dcab1bba7",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "mode": "chooseBranch",
+        "useDataOfInput": 2
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2336,
+        208
+      ],
+      "id": "2b959880-00b9-435e-b809-9469c2073263",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "content": "# Message inject service\n- Extract reel link\n- Download reel video",
+        "height": 624,
+        "width": 1568
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -448,
+        -208
+      ],
+      "id": "593b7e71-606e-4027-9f10-10ab521a8a27",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "# Analyze downloaded reel\n- Generate the video title and description for youtube\n- Hold in state as data",
+        "height": 768,
+        "width": 816
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -128
+      ],
+      "id": "046c1491-f3c9-45f3-b536-1a98c49d8ba7",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Upload in youtube\n- If successful upload in yt, upload in google drive too\n- if successful upload in yt, drive then update sheets for logs for processed reel\n- Finally, notify upload in discord channel",
+        "height": 800,
+        "width": 1200
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        2080,
+        -208
+      ],
+      "id": "f9a06423-9a7f-4c32-8aa8-e769b8701f3e",
+      "name": "Sticky Note2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get many messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many messages": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Analyze video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze video": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get row(s) in sheet1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Upload a video": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Upload a video",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "0702f5d0-3028-4d51-9e90-308cc042be7b",
+  "meta": {
+    "templateId": "self-building-ai-agent",
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b92bf74832deacc9331e66551cb1f98ac97b16078580b286b00be22a3dab70d3"
+  },
+  "id": "lRyH01KviB3By2nP",
+  "tags": []
+}
